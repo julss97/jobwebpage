@@ -1,152 +1,237 @@
 /* ==========================================================================
-   Interaktionen der Profilseite
+   Kinetic Editorial – Interaktionen & Motion-Design
    ========================================================================== */
 (function () {
     'use strict';
 
-    document.documentElement.classList.add('js');
-
     const $ = (sel, ctx = document) => ctx.querySelector(sel);
     const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const isWide = () => window.innerWidth > 960;
 
-    /* ---------- Farbschema (hell/dunkel) ---------- */
-    const themeToggle = $('.theme-toggle');
-    const root = document.documentElement;
+    if (!reducedMotion) document.documentElement.classList.add('morph');
 
-    function currentTheme() {
-        const set = root.getAttribute('data-theme');
-        if (set) return set;
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    /* ---------- Cursor ---------- */
+    const cursor = $('.cursor');
+    if (cursor && finePointer && !reducedMotion) {
+        window.addEventListener('pointermove', (e) => {
+            cursor.classList.add('is-on');
+            cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+        });
+        document.addEventListener('pointerleave', () => cursor.classList.remove('is-on'));
+        $$('a, button, .panel, .stack-card, .skill, input, textarea').forEach((el) => {
+            el.addEventListener('pointerenter', () => cursor.classList.add('is-big'));
+            el.addEventListener('pointerleave', () => cursor.classList.remove('is-big'));
+        });
     }
 
-    themeToggle?.addEventListener('click', () => {
-        const next = currentTheme() === 'dark' ? 'light' : 'dark';
-        root.setAttribute('data-theme', next);
-        try { localStorage.setItem('theme', next); } catch (e) { /* Speicher nicht verfügbar */ }
-    });
+    /* ---------- Mobiles Vollbild-Menü ---------- */
+    const toggle = $('.menu-toggle');
+    const overlay = $('#menu-overlay');
 
-    /* ---------- Mobile Navigation ---------- */
-    const header = $('.site-header');
-    const navToggle = $('.nav-toggle');
-
-    function setNav(open) {
-        header.classList.toggle('nav-open', open);
-        navToggle.setAttribute('aria-expanded', String(open));
-        navToggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
+    function setMenu(open) {
+        if (!overlay) return;
+        if (open) overlay.hidden = false;
+        requestAnimationFrame(() => overlay.classList.toggle('is-open', open));
+        document.body.classList.toggle('menu-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        $('.menu-label', toggle).textContent = open ? 'Schließen' : 'Menü';
+        document.body.style.overflow = open ? 'hidden' : '';
+        if (!open) setTimeout(() => { if (!overlay.classList.contains('is-open')) overlay.hidden = true; }, 700);
     }
 
-    navToggle?.addEventListener('click', () => setNav(!header.classList.contains('nav-open')));
-    $$('.nav-links a').forEach((a) => a.addEventListener('click', () => setNav(false)));
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setNav(false); });
-    document.addEventListener('click', (e) => {
-        if (header.classList.contains('nav-open') && !header.contains(e.target)) setNav(false);
-    });
+    toggle?.addEventListener('click', () => setMenu(toggle.getAttribute('aria-expanded') !== 'true'));
+    $$('a', overlay).forEach((a) => a.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay?.classList.contains('is-open')) setMenu(false); });
 
-    /* ---------- Scroll: Header-Schatten, Fortschritt, Nach-oben-Button ---------- */
-    const progress = $('.scroll-progress span');
-    const toTop = $('.to-top');
-    let ticking = false;
-
-    function onScroll() {
-        const y = window.scrollY;
-        const max = document.documentElement.scrollHeight - window.innerHeight;
-        header.classList.toggle('is-scrolled', y > 10);
-        if (progress) progress.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
-        toTop?.classList.toggle('is-visible', y > window.innerHeight * 0.8);
-        ticking = false;
-    }
-
-    window.addEventListener('scroll', () => {
-        if (!ticking) { requestAnimationFrame(onScroll); ticking = true; }
-    }, { passive: true });
-    onScroll();
-
-    toTop?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' }));
-
-    /* ---------- Aktiver Navigationspunkt ---------- */
-    const navLinks = $$('[data-nav]');
-    const sections = navLinks.map((a) => document.getElementById(a.dataset.nav)).filter(Boolean);
-
-    if ('IntersectionObserver' in window && sections.length) {
-        const navObserver = new IntersectionObserver((entries) => {
-            entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                navLinks.forEach((a) => {
-                    const active = a.dataset.nav === entry.target.id;
-                    a.classList.toggle('is-active', active);
-                    if (active) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
-                });
-            });
-        }, { rootMargin: '-45% 0px -50% 0px' });
-        sections.forEach((s) => navObserver.observe(s));
-    }
-
-    /* ---------- Einblend-Animationen ---------- */
-    const revealEls = $$('.reveal');
-    if ('IntersectionObserver' in window && !reducedMotion) {
-        const revealObserver = new IntersectionObserver((entries, obs) => {
-            entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                    obs.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-        revealEls.forEach((el) => revealObserver.observe(el));
-    } else {
-        revealEls.forEach((el) => el.classList.add('is-visible'));
-    }
-
-    /* ---------- Rotierende Rollen im Hero (Schreibmaschinen-Effekt) ---------- */
+    /* ---------- Hero: Rollen-Schreibmaschine ---------- */
     const rotator = $('.rotator');
-    if (rotator) {
+    if (rotator && !reducedMotion) {
         let words = [];
         try { words = JSON.parse(rotator.dataset.words || '[]'); } catch (e) { words = []; }
-
-        if (words.length > 1 && !reducedMotion) {
+        if (words.length > 1) {
             let w = 0, c = words[0].length, deleting = true;
             const tick = () => {
-                const word = words[w];
                 c += deleting ? -1 : 1;
-                rotator.textContent = word.slice(0, c);
-                let delay = deleting ? 35 : 70;
-                if (!deleting && c === word.length) { deleting = true; delay = 2200; }
-                else if (deleting && c === 0) { deleting = false; w = (w + 1) % words.length; delay = 350; }
+                rotator.textContent = words[w].slice(0, c);
+                let delay = deleting ? 30 : 65;
+                if (!deleting && c === words[w].length) { deleting = true; delay = 2400; }
+                else if (deleting && c === 0) { deleting = false; w = (w + 1) % words.length; delay = 300; }
                 setTimeout(tick, delay);
             };
-            setTimeout(tick, 2500);
+            setTimeout(tick, 3000);
         }
     }
 
-    /* ---------- Tabs (Kompetenzfelder) mit Tastatursteuerung ---------- */
-    $$('[data-tabs]').forEach((tabsEl) => {
-        const tabs = $$('[role="tab"]', tabsEl);
-        const panels = $$('[role="tabpanel"]', tabsEl);
-
-        function select(tab, focus = true) {
-            tabs.forEach((t) => {
-                const on = t === tab;
-                t.setAttribute('aria-selected', String(on));
-                t.tabIndex = on ? 0 : -1;
-            });
-            panels.forEach((p) => { p.hidden = p.id !== tab.getAttribute('aria-controls'); });
-            if (focus) tab.focus();
-            tab.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
-        }
-
-        tabs.forEach((tab, i) => {
-            tab.addEventListener('click', () => select(tab, false));
-            tab.addEventListener('keydown', (e) => {
-                const keys = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
-                if (e.key in keys) {
-                    e.preventDefault();
-                    select(tabs[(i + keys[e.key] + tabs.length) % tabs.length]);
-                } else if (e.key === 'Home') { e.preventDefault(); select(tabs[0]); }
-                else if (e.key === 'End') { e.preventDefault(); select(tabs[tabs.length - 1]); }
+    /* ---------- Hero: Bögen folgen der Maus ---------- */
+    const arches = $$('#arches .arch');
+    if (arches.length && finePointer && !reducedMotion) {
+        window.addEventListener('pointermove', (e) => {
+            const x = e.clientX / window.innerWidth - 0.5;
+            const y = e.clientY / window.innerHeight - 0.5;
+            arches.forEach((a) => {
+                const d = parseFloat(a.dataset.depth) * 40;
+                a.style.transform = `var(--base) translate(${x * d}px, ${y * d}px) rotateY(${x * 10}deg)`;
             });
         });
-    });
+    }
+
+    /* ---------- Magnetische Elemente ---------- */
+    if (finePointer && !reducedMotion) {
+        $$('.magnetic, .magnet').forEach((el) => {
+            const strength = el.classList.contains('magnet') ? 0.35 : 0.2;
+            const inner = el.classList.contains('magnet') ? $('span', el) : null;
+            el.addEventListener('pointermove', (e) => {
+                const r = el.getBoundingClientRect();
+                const dx = e.clientX - r.left - r.width / 2;
+                const dy = e.clientY - r.top - r.height / 2;
+                el.style.transform = `translate(${dx * strength}px, ${dy * strength}px)`;
+                if (inner) inner.style.transform = `translate(${dx * 0.15}px, ${dy * 0.15}px)`;
+            });
+            el.addEventListener('pointerleave', () => {
+                el.style.transform = '';
+                if (inner) inner.style.transform = '';
+            });
+        });
+    }
+
+    /* ---------- 3D-Tilt (Ausbildung) ---------- */
+    if (finePointer && !reducedMotion) {
+        $$('.tilt').forEach((card) => {
+            card.addEventListener('pointermove', (e) => {
+                const r = card.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width - 0.5;
+                const y = (e.clientY - r.top) / r.height - 0.5;
+                card.style.transform = `rotateY(${x * 12}deg) rotateX(${-y * 12}deg) translateZ(10px)`;
+            });
+            card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+        });
+    }
+
+    /* ---------- Über mich: Wörter leuchten beim Scrollen auf ---------- */
+    const statement = $('[data-words-reveal]');
+    let statementWords = [];
+    if (statement) {
+        const highlight = /^(Informatikerin|Gesundheitsinformatik|IT-Management|Technologie|Menschen|Technik)/;
+        const words = statement.textContent.trim().split(/\s+/);
+        statement.textContent = '';
+        words.forEach((word, i) => {
+            const span = document.createElement('span');
+            span.className = 'w' + (highlight.test(word) ? ' hl' : '');
+            span.textContent = word;
+            statement.appendChild(span);
+            if (i < words.length - 1) statement.appendChild(document.createTextNode(' '));
+        });
+        statementWords = $$('.w', statement);
+    }
+
+    /* ---------- Einblendungen beim Scrollen ---------- */
+    const counters = $$('[data-count]');
+    function runCounter(el) {
+        const end = parseInt(el.dataset.count, 10);
+        const start = performance.now();
+        const step = (now) => {
+            const t = Math.min((now - start) / 1500, 1);
+            el.textContent = String(Math.round(end * (1 - Math.pow(1 - t, 3))));
+            if (t < 1) requestAnimationFrame(step);
+        };
+        el.textContent = '0';
+        requestAnimationFrame(step);
+    }
+
+    if ('IntersectionObserver' in window && !reducedMotion) {
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                $$('[data-count]', entry.target).forEach(runCounter);
+                io.unobserve(entry.target);
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+        $$('.reveal').forEach((el) => io.observe(el));
+    } else {
+        $$('.reveal').forEach((el) => el.classList.add('is-visible'));
+        statementWords.forEach((w) => w.classList.add('on'));
+        counters.forEach((c) => { c.textContent = c.dataset.count; });
+    }
+
+    /* ---------- Scroll-gesteuerte Effekte ---------- */
+    const header = $('.site-header');
+    const progress = $('.scroll-progress span');
+    const zones = $$('[data-bg]');
+    const navLinks = $$('[data-nav]');
+    const hscroll = $('.hscroll');
+    const rail = $('#rail');
+    const stackCards = $$('.stack-card');
+
+    const clamp = (v, min = 0, max = 1) => Math.min(Math.max(v, min), max);
+
+    function onScroll() {
+        const vh = window.innerHeight;
+        const y = window.scrollY;
+        const max = document.documentElement.scrollHeight - vh;
+        if (progress) progress.style.transform = `scaleX(${max > 0 ? y / max : 0})`;
+
+        // Farbzone & aktiver Menüpunkt
+        const line = vh * 0.6;
+        const current = zones.find((z) => {
+            const r = z.getBoundingClientRect();
+            return r.top <= line && r.bottom > line;
+        });
+        if (current) {
+            if (!reducedMotion) document.body.style.backgroundColor = current.dataset.bg;
+            document.documentElement.style.setProperty('--header-bg', current.dataset.bg);
+            document.body.classList.toggle('on-dark', current.hasAttribute('data-dark'));
+            navLinks.forEach((a) => {
+                const on = a.dataset.nav === current.id;
+                a.classList.toggle('is-active', on);
+                if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+            });
+        }
+
+        if (reducedMotion) return;
+
+        // Über mich: Wort für Wort
+        if (statementWords.length) {
+            const r = statement.getBoundingClientRect();
+            const p = clamp((vh * 0.85 - r.top) / (r.height + vh * 0.35));
+            const count = Math.round(p * statementWords.length);
+            statementWords.forEach((w, i) => w.classList.toggle('on', i < count));
+        }
+
+        // Kompetenzen: vertikales Scrollen bewegt die Karten horizontal
+        if (hscroll && rail) {
+            if (isWide()) {
+                const r = hscroll.getBoundingClientRect();
+                const p = clamp(-r.top / (r.height - vh));
+                const distance = rail.scrollWidth - window.innerWidth;
+                rail.style.transform = `translate3d(${-p * Math.max(distance, 0)}px, 0, 0)`;
+            } else {
+                rail.style.transform = '';
+            }
+        }
+
+        // Stationen: Karten kippen nach hinten, sobald die nächste darüberschiebt
+        stackCards.forEach((card, i) => {
+            const next = stackCards[i + 1];
+            if (!next) return;
+            const nr = next.getBoundingClientRect();
+            const p = clamp(1 - (nr.top - vh * 0.12) / (vh * 0.75));
+            card.style.transform = `scale(${1 - p * 0.07}) rotateX(${p * 10}deg)`;
+            card.style.filter = `brightness(${1 - p * 0.35})`;
+        });
+
+        header?.classList.toggle('is-scrolled', y > 10);
+    }
+
+    let ticking = false;
+    const requestTick = () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); ticking = false; }); }
+    };
+    window.addEventListener('scroll', requestTick, { passive: true });
+    window.addEventListener('resize', requestTick);
+    onScroll();
 
     /* ---------- Skill-Filter: Kategorie, Erfahrungsstufe & Suche ---------- */
     const search = $('#skill-search');
@@ -156,19 +241,16 @@
     const empty = $('#skill-empty');
     let activeCat = 'all';
 
-    function escapeHtml(s) {
-        return s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-    }
+    const escapeHtml = (s) => s.replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
     function applySkillFilter() {
         const q = (search?.value || '').trim().toLowerCase();
         const levels = levelChips.filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.level);
-        let visibleTotal = 0;
+        let total = 0;
 
         groups.forEach((g) => {
             const catMatch = activeCat === 'all' || g.dataset.category === activeCat;
-            let visibleInGroup = 0;
-
+            let visible = 0;
             $$('.skill', g).forEach((skill) => {
                 const nameEl = $('.skill-name', skill);
                 const original = nameEl.dataset.original || nameEl.textContent;
@@ -176,24 +258,22 @@
 
                 const show = catMatch && levels.includes(skill.dataset.level) && (!q || skill.dataset.name.includes(q));
                 skill.hidden = !show;
-                if (show) visibleInGroup++;
+                if (show) visible++;
 
-                // Treffer hervorheben
-                if (q && show) {
-                    const idx = original.toLowerCase().indexOf(q);
-                    nameEl.innerHTML = idx < 0 ? escapeHtml(original)
-                        : escapeHtml(original.slice(0, idx)) + '<mark>' + escapeHtml(original.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(original.slice(idx + q.length));
+                const idx = q && show ? original.toLowerCase().indexOf(q) : -1;
+                if (idx >= 0) {
+                    nameEl.innerHTML = escapeHtml(original.slice(0, idx)) + '<mark>' + escapeHtml(original.slice(idx, idx + q.length)) + '</mark>' + escapeHtml(original.slice(idx + q.length));
                 } else {
                     nameEl.textContent = original;
                 }
             });
-
-            g.hidden = visibleInGroup === 0;
+            g.hidden = visible === 0;
             if (!g.hidden) g.classList.add('is-visible');
-            visibleTotal += visibleInGroup;
+            total += visible;
         });
 
-        if (empty) empty.hidden = visibleTotal > 0;
+        if (empty) empty.hidden = total > 0;
+        requestTick();
     }
 
     catChips.forEach((chip) => chip.addEventListener('click', () => {
@@ -216,30 +296,6 @@
 
     search?.addEventListener('input', applySkillFilter);
 
-    /* ---------- Zähler-Animation (Masterarbeit) ---------- */
-    const counters = $$('[data-count]');
-    if ('IntersectionObserver' in window && !reducedMotion) {
-        const countObserver = new IntersectionObserver((entries, obs) => {
-            entries.forEach((entry) => {
-                if (!entry.isIntersecting) return;
-                const el = entry.target;
-                const target = parseInt(el.dataset.count, 10);
-                const start = performance.now();
-                const duration = 1400;
-                const step = (now) => {
-                    const t = Math.min((now - start) / duration, 1);
-                    const eased = 1 - Math.pow(1 - t, 3);
-                    el.textContent = Math.round(target * eased);
-                    if (t < 1) requestAnimationFrame(step);
-                };
-                el.textContent = '0';
-                requestAnimationFrame(step);
-                obs.unobserve(el);
-            });
-        }, { threshold: 0.6 });
-        counters.forEach((c) => countObserver.observe(c));
-    }
-
     /* ---------- Flip-Karten (Touch & Tastatur) ---------- */
     $$('.flip-inner').forEach((btn) => btn.addEventListener('click', () => {
         btn.setAttribute('aria-pressed', String(btn.getAttribute('aria-pressed') !== 'true'));
@@ -252,7 +308,6 @@
         const submit = $('button[type="submit"]', form);
         const message = $('#f-message', form);
         const counter = $('#char-count', form);
-
         const messages = {
             name: 'Bitte gib deinen Namen an (2–100 Zeichen).',
             email: 'Bitte gib eine gültige E-Mail-Adresse an.',
@@ -266,16 +321,14 @@
         function setFieldError(name, text) {
             const input = form.elements[name];
             const field = input.closest('.field');
-            const err = $('.field-error', field);
             field.classList.toggle('has-error', !!text);
             input.setAttribute('aria-invalid', text ? 'true' : 'false');
-            err.textContent = text || '';
+            $('.field-error', field).textContent = text || '';
         }
 
         function validateField(name) {
             const input = form.elements[name];
-            input.value = name === 'message' ? input.value : input.value.trimStart();
-            const valid = input.checkValidity() && input.value.trim().length >= (input.minLength > 0 ? input.minLength : 0);
+            const valid = input.checkValidity() && input.value.trim().length >= Math.max(input.minLength, 0);
             setFieldError(name, valid ? '' : messages[name]);
             return valid;
         }
@@ -297,10 +350,7 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const valid = ['name', 'email', 'message'].map(validateField).every(Boolean);
-            if (!valid) {
-                form.querySelector('[aria-invalid="true"]')?.focus();
-                return;
-            }
+            if (!valid) { $('[aria-invalid="true"]', form)?.focus(); return; }
 
             submit.classList.add('is-loading');
             submit.disabled = true;
