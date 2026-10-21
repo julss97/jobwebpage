@@ -12,6 +12,36 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
 }
 
+/*
+ * Ersatzfunktionen, falls die PHP-Erweiterung "mbstring" nicht aktiviert ist
+ * (unter Windows ist sie in der Standard-php.ini ausgeschaltet).
+ */
+if (!function_exists('mb_strlen')) {
+    function mb_strlen(string $s, ?string $encoding = null): int
+    {
+        return (int) preg_match_all('/./us', $s);
+    }
+}
+if (!function_exists('mb_substr')) {
+    function mb_substr(string $s, int $start, ?int $length = null, ?string $encoding = null): string
+    {
+        $chars = preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        return implode('', array_slice($chars, $start, $length));
+    }
+}
+if (!function_exists('mb_strtolower')) {
+    function mb_strtolower(string $s, ?string $encoding = null): string
+    {
+        return strtr(strtolower($s), ['Ä' => 'ä', 'Ö' => 'ö', 'Ü' => 'ü']);
+    }
+}
+if (!function_exists('mb_strtoupper')) {
+    function mb_strtoupper(string $s, ?string $encoding = null): string
+    {
+        return strtr(strtoupper($s), ['ä' => 'Ä', 'ö' => 'Ö', 'ü' => 'Ü']);
+    }
+}
+
 /** HTML-sichere Ausgabe. */
 function e(?string $value): string
 {
