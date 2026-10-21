@@ -28,8 +28,6 @@ Helles, mutiges Editorial-Layout mit satten Farbflächen, großer Typografie und
 - Kontaktformular mit Client- und Servervalidierung, CSRF-Schutz, Honeypot und Rate-Limit
 - Barrierearm: Tastaturbedienung, `prefers-reduced-motion` schaltet alle Bewegungen ab, funktioniert auch ohne JavaScript, druckfreundlich
 
-Die drei ursprünglichen Designentwürfe liegen zum Vergleich in `design-vorschlaege/`.
-
 ## Struktur
 
 ```

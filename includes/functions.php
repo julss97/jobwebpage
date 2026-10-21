@@ -49,6 +49,22 @@ function e(?string $value): string
     return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_HTML5, 'UTF-8');
 }
 
+/**
+ * Externe Adresse vervollständigen: "www.linkedin.com/in/x" → "https://www.linkedin.com/in/x".
+ * Ohne Protokoll würde der Browser den Link als Pfad auf der eigenen Seite verstehen.
+ */
+function external_url(string $url): string
+{
+    $url = trim($url);
+    return preg_match('#^[a-z][a-z0-9+.-]*:#i', $url) ? $url : 'https://' . ltrim($url, '/');
+}
+
+/** Lokaler Dateipfad als Web-Pfad (Windows-Backslashes → Schrägstriche). */
+function asset_path(string $path): string
+{
+    return str_replace('\\', '/', $path);
+}
+
 /** CSRF-Token für das Kontaktformular erzeugen bzw. zurückgeben. */
 function csrf_token(): string
 {

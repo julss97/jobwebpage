@@ -98,7 +98,7 @@ $ribbonB = array_column(array_merge($p['skills']['Data Science & ML'], $p['skill
             <div class="arch arch-2" data-depth="1"></div>
             <div class="arch arch-photo" data-depth="0.25">
                 <?php if (!empty($person['photo'])): ?>
-                    <img src="<?= e($person['photo']) ?>" alt="Porträt von <?= e($person['name']) ?>">
+                    <img src="<?= e(asset_path($person['photo'])) ?>" alt="Porträt von <?= e($person['name']) ?>">
                 <?php else: ?>
                     <!-- Platzhalter: In data/profile.php unter person.photo den Bildpfad eintragen. -->
                     <div class="photo-placeholder" role="img" aria-label="Platzhalter für ein Porträtfoto">
@@ -343,8 +343,8 @@ $ribbonB = array_column(array_merge($p['skills']['Data Science & ML'], $p['skill
                 <ul class="contact-list reveal">
                     <li><?= icon('mail') ?><a href="mailto:<?= e($person['email']) ?>"><?= e($person['email']) ?></a></li>
                     <?php if (!empty($person['location'])): ?><li><?= icon('pin') ?><span><?= e($person['location']) ?></span></li><?php endif; ?>
-                    <?php if (!empty($person['linkedin'])): ?><li><?= icon('linkedin') ?><a href="<?= e($person['linkedin']) ?>" rel="noopener" target="_blank">LinkedIn</a></li><?php endif; ?>
-                    <?php if (!empty($person['github'])): ?><li><?= icon('github') ?><a href="<?= e($person['github']) ?>" rel="noopener" target="_blank">GitHub</a></li><?php endif; ?>
+                    <?php if (!empty($person['linkedin'])): ?><li><?= icon('linkedin') ?><a href="<?= e(external_url($person['linkedin'])) ?>" rel="noopener" target="_blank">LinkedIn</a></li><?php endif; ?>
+                    <?php if (!empty($person['github'])): ?><li><?= icon('github') ?><a href="<?= e(external_url($person['github'])) ?>" rel="noopener" target="_blank">GitHub</a></li><?php endif; ?>
                 </ul>
                 <a class="magnet reveal" href="mailto:<?= e($person['email']) ?>"><span>Schreib mir <?= icon('mail') ?></span></a>
             </div>
