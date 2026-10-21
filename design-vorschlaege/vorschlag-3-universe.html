@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vorschlag 3 – Data Universe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   VORSCHLAG 3 – DATA UNIVERSE
+   Tech & 3D: rotierendes Partikel-Netzwerk (Canvas, echte 3D-Projektion),
+   interaktiver Skill-Globus zum Drehen, Hexagon-Porträt mit Orbits,
+   Text-Scramble-Effekt und 3D-Flip-Karten.
+   ========================================================================== */
+:root {
+    --olive: #6e8c14;
+    --olive-glow: #b4dc32;
+    --rose: #ec5f78;
+    --berry: #7e0b45;
+    --space: #0e0610;
+    --text: #fbeef3;
+    --muted: #c8adb8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Inter, system-ui, sans-serif; background: var(--space); color: var(--text); overflow-x: hidden; line-height: 1.6; }
+h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0 0 .5em; line-height: 1.05; }
+.mono { font-family: "JetBrains Mono", monospace; }
+
+#net { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; }
+.vignette { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 40%, rgba(14,6,16,.85) 100%), linear-gradient(180deg, rgba(126,11,69,.25), transparent 50%); }
+
+.topbar { position: fixed; inset: 0 0 auto; z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 1rem max(1.2rem, 4vw); background: linear-gradient(rgba(14,6,16,.9), transparent); }
+.topbar .mono { color: var(--olive-glow); font-size: .9rem; }
+.topbar a { color: var(--text); text-decoration: none; margin-left: 1.4rem; font-size: .9rem; opacity: .8; }
+.topbar a:hover { opacity: 1; color: var(--rose); }
+
+/* ---------- Hero ---------- */
+.hero { overflow: hidden; min-height: 100vh; display: grid; grid-template-columns: 1.2fr 1fr; align-items: center; gap: 3rem; padding: 6rem max(1.2rem, 6vw) 3rem; }
+.prompt { color: var(--olive-glow); font-size: .95rem; }
+.prompt::after { content: "▋"; animation: blink 1s steps(1) infinite; margin-left: 2px; }
+@keyframes blink { 50% { opacity: 0; } }
+.hero h1 { font-size: clamp(3rem, 8vw, 6.5rem); font-weight: 700; margin-top: .6rem; }
+.hero h1 em { font-style: normal; color: var(--rose); text-shadow: 0 0 40px rgba(236,95,120,.6); }
+.hero p { color: var(--muted); font-size: 1.15rem; max-width: 34rem; }
+.code-card { margin-top: 1.6rem; padding: 1rem 1.2rem; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); font-size: .85rem; max-width: 30rem; }
+.code-card .k { color: var(--rose); } .code-card .s { color: var(--olive-glow); } .code-card .c { color: #8a6f7c; }
+.btn { display: inline-block; margin-top: 1.6rem; padding: .95rem 1.5rem; border-radius: 12px; font-weight: 600; text-decoration: none; color: var(--space); background: var(--olive-glow); box-shadow: 0 0 0 0 rgba(180,220,50,.6); animation: ping 2.4s infinite; }
+@keyframes ping { 70% { box-shadow: 0 0 0 18px rgba(180,220,50,0); } }
+
+/* Hexagon-Porträt mit Orbits */
+.orbit-scene { position: relative; height: 480px; perspective: 1000px; display: grid; place-items: center; }
+.orbit-system { position: relative; width: 300px; height: 300px; transform-style: preserve-3d; transform: rotateX(62deg); animation: wobble 10s ease-in-out infinite; }
+@keyframes wobble { 50% { transform: rotateX(58deg) rotateY(8deg); } }
+.orbit { position: absolute; inset: var(--inset); border-radius: 50%; border: 1px solid rgba(236,95,120,.35); transform-style: preserve-3d; animation: orbit var(--dur) linear infinite; }
+.orbit:nth-child(2) { border-color: rgba(180,220,50,.35); }
+.orbit i { position: absolute; top: -7px; left: calc(50% - 7px); width: 14px; height: 14px; border-radius: 50%; background: var(--rose); box-shadow: 0 0 18px var(--rose); }
+.orbit:nth-child(2) i { background: var(--olive-glow); box-shadow: 0 0 18px var(--olive-glow); }
+@keyframes orbit { to { transform: rotateZ(360deg); } }
+.hex {
+    position: absolute; width: 250px; height: 280px; z-index: 2;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: linear-gradient(150deg, var(--rose), var(--berry) 60%, #2c0418);
+    display: grid; place-content: center; justify-items: center; gap: .6rem;
+    animation: hover 5s ease-in-out infinite;
+}
+.hex::before { content: ""; position: absolute; inset: 4px; clip-path: inherit; background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 4px); }
+.hex .initials { font-family: "Space Grotesk"; font-weight: 700; font-size: 5rem; line-height: 1; }
+.hex .hint { font-size: .75rem; border: 1.5px dashed rgba(255,255,255,.7); border-radius: 999px; padding: .25rem .8rem; }
+@keyframes hover { 50% { transform: translateY(-14px); } }
+.scan { position: absolute; z-index: 3; width: 250px; height: 280px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); pointer-events: none; animation: hover 5s ease-in-out infinite; }
+.scan::after { content: ""; position: absolute; left: 0; right: 0; height: 40px; background: linear-gradient(transparent, rgba(180,220,50,.35), transparent); animation: scan 3s linear infinite; }
+@keyframes scan { from { top: -40px; } to { top: 100%; } }
+
+/* ---------- Skill-Globus ---------- */
+section.block { overflow: hidden; padding: 6rem max(1.2rem, 6vw); }
+.section-title { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.section-title .mono { color: var(--olive-glow); font-size: .9rem; }
+.section-title h2 { font-size: clamp(2.2rem, 5vw, 3.8rem); }
+.globe-wrap { display: grid; grid-template-columns: 1fr 1.2fr; gap: 3rem; align-items: center; }
+.globe { position: relative; height: 520px; cursor: grab; touch-action: pan-y; user-select: none; }
+.globe:active { cursor: grabbing; }
+.globe span { position: absolute; left: 50%; top: 50%; white-space: nowrap; font-weight: 600; padding: .25rem .7rem; border-radius: 999px; transform: translate(-50%, -50%); transition: background .2s, color .2s; will-change: transform, opacity; }
+.globe span.l3 { color: var(--olive-glow); }
+.globe span.l2 { color: var(--rose); }
+.globe span.l1 { color: #e7b6c6; }
+.globe span:hover { background: var(--rose); color: #fff; }
+.legend { display: grid; gap: .7rem; margin-top: 1.5rem; }
+.legend div { display: flex; align-items: center; gap: .7rem; }
+.legend i { width: 12px; height: 12px; border-radius: 50%; }
+.drag-hint { margin-top: 1.5rem; color: var(--muted); font-size: .9rem; }
+
+/* ---------- Flip-Karten ---------- */
+.flip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.4rem; margin-top: 2.5rem; }
+.flip { perspective: 1000px; height: 260px; cursor: pointer; }
+.flip-inner { position: relative; height: 100%; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.3,1.3,.4,1); }
+.flip:hover .flip-inner, .flip.on .flip-inner { transform: rotateY(180deg); }
+.face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 22px; padding: 1.8rem; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255,255,255,.12); }
+.front { background: linear-gradient(160deg, rgba(126,11,69,.55), rgba(14,6,16,.8)); backdrop-filter: blur(8px); }
+.front .mono { color: var(--olive-glow); }
+.back { transform: rotateY(180deg); background: linear-gradient(160deg, var(--rose), var(--berry)); }
+.flip:nth-child(even) .back { background: linear-gradient(160deg, var(--olive-glow), var(--olive)); color: var(--space); }
+.front h3 { font-size: 1.6rem; }
+
+/* ---------- 3D-Timeline ---------- */
+.road-scene { perspective: 900px; height: 520px; overflow: hidden; margin-top: 2rem; position: relative; }
+.road { position: absolute; left: 50%; bottom: -40px; width: min(700px, 92vw); height: 1100px; margin-left: calc(min(700px, 92vw) / -2); transform: rotateX(62deg); transform-origin: bottom; background: linear-gradient(90deg, transparent 49.6%, rgba(236,95,120,.8) 49.6% 50.4%, transparent 50.4%), repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 2px, transparent 2px 80px); transform-style: preserve-3d; }
+.road-item { position: absolute; width: 46%; padding: 1rem 1.2rem; border-radius: 16px; background: rgba(14,6,16,.85); border: 1px solid rgba(236,95,120,.5); transform: rotateX(-62deg); transform-origin: bottom; transition: bottom .1s linear; }
+.road-item:nth-child(odd) { left: 2%; } .road-item:nth-child(even) { right: 2%; border-color: rgba(180,220,50,.6); }
+.road-item b { display: block; font-family: "Space Grotesk"; font-size: 1.3rem; }
+.road-item small { color: var(--muted); }
+
+.label { position: fixed; bottom: 1rem; left: 1rem; z-index: 20; padding: .5rem 1rem; border-radius: 10px; background: var(--olive-glow); color: var(--space); font-weight: 700; font-size: .85rem; font-family: "JetBrains Mono"; }
+
+@media (max-width: 900px) {
+    .hero, .globe-wrap { grid-template-columns: 1fr; }
+    .orbit-scene { order: -1; height: 380px; transform: scale(.85); }
+    .globe { height: 420px; }
+    .topbar nav { display: none; }
+    .road-item { width: 60%; } .road-item:nth-child(odd) { left: 0; } .road-item:nth-child(even) { right: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<canvas id="net" aria-hidden="true"></canvas>
+<div class="vignette" aria-hidden="true"></div>
+
+<div class="topbar"><span class="mono">~/julia-betz $</span><nav><a href="#skills">skills</a><a href="#staerken">stärken</a><a href="#weg">werdegang</a><a href="#">kontakt</a></nav></div>
+
+<header class="hero">
+    <div>
+        <span class="prompt mono">whoami</span>
+        <h1 data-scramble>Julia Betz</h1>
+        <h1 style="font-size:clamp(1.6rem,3.5vw,2.6rem)">Ich verbinde <em>Systeme</em> &amp; Menschen.</h1>
+        <p>Informatikerin mit Fokus auf Healthcare IT, Schnittstellen, Data Science und KI – Technologie, die Arbeitsabläufe wirklich verbessert.</p>
+        <div class="code-card mono">
+            <span class="c">// GET /Practitioner/julia-betz</span><br>
+            { <span class="k">"focus"</span>: [<span class="s">"FHIR"</span>, <span class="s">"Data"</span>, <span class="s">"KI"</span>, <span class="s">"UX"</span>],<br>
+            &nbsp;&nbsp;<span class="k">"status"</span>: <span class="s">"200 OK – bereit für Neues"</span> }
+        </div>
+        <a class="btn" href="#">Verbindung herstellen →</a>
+    </div>
+    <div class="orbit-scene">
+        <div class="orbit-system">
+            <div class="orbit" style="--inset:-60px;--dur:12s"><i></i></div>
+            <div class="orbit" style="--inset:-10px;--dur:8s"><i></i></div>
+            <div class="orbit" style="--inset:-110px;--dur:18s"><i></i></div>
+        </div>
+        <div class="hex"><span class="initials">JB</span><span class="hint">📷 Platz für dein Foto</span></div>
+        <div class="scan"></div>
+    </div>
+</header>
+
+<section class="block" id="skills">
+    <div class="section-title"><span class="mono">01 /</span><h2 data-scramble>Skill-Universum</h2></div>
+    <div class="globe-wrap">
+        <div>
+            <p style="color:var(--muted);font-size:1.1rem">Mehr als 50 Werkzeuge, Methoden und Technologien – farblich nach Erfahrungstiefe. Zieh am Globus, um ihn zu drehen.</p>
+            <div class="legend">
+                <div><i style="background:var(--olive-glow)"></i>Praxiserfahrung</div>
+                <div><i style="background:var(--rose)"></i>Studium &amp; Projekte</div>
+                <div><i style="background:#e7b6c6"></i>Grundlagen</div>
+            </div>
+            <p class="drag-hint mono">↻ drag / swipe to rotate</p>
+        </div>
+        <div class="globe" id="globe" aria-label="Interaktiver Skill-Globus"></div>
+    </div>
+</section>
+
+<section class="block" id="staerken">
+    <div class="section-title"><span class="mono">02 /</span><h2 data-scramble>Arbeitsweise</h2></div>
+    <div class="flip-grid">
+        <div class="flip"><div class="flip-inner"><div class="face front"><span class="mono">01</span><h3>Analytisch &amp; strukturiert</h3></div><div class="face back">Erst verstehen, dann strukturieren, recherchieren und Lösungswege entwickeln.</div></div></div>
+        <div class="flip"><div class="flip-inner"><div class="face front"><span class="mono">02</span><h3>Verständlich kommunizieren</h3></div><div class="face back">Komplexes in Schritte zerlegen, sodass andere daran anknüpfen können.</div></div></div>
+        <div class="flip"><div class="flip-inner"><div class="face front"><span class="mono">03</span><h3>Offen für bessere Wege</h3></div><div class="face back">Ich prüfe Annahmen, statt an einer vorgeschlagenen Lösung festzuhalten.</div></div></div>
+        <div class="flip"><div class="flip-inner"><div class="face front"><span class="mono">04</span><h3>Lernfreudig &amp; vielseitig</h3></div><div class="face back">Von Softwareentwicklung über Produktion bis Kundenkontakt.</div></div></div>
+    </div>
+</section>
+
+<section class="block" id="weg">
+    <div class="section-title"><span class="mono">03 /</span><h2 data-scramble>Werdegang</h2></div>
+    <div class="road-scene">
+        <div class="road" id="road">
+            <div class="road-item" data-pos="0"><b>Dedalus HealthCare</b><small>Software- &amp; Schnittstellenentwicklung</small></div>
+            <div class="road-item" data-pos="1"><b>Pfizer Manufacturing</b><small>Digitalisierung &amp; Automatisierung</small></div>
+            <div class="road-item" data-pos="2"><b>Siemens Logistics</b><small>Second-Level-IT-Support</small></div>
+            <div class="road-item" data-pos="3"><b>M.Sc. Informatik</b><small>HTWG Konstanz · IT-Management</small></div>
+            <div class="road-item" data-pos="4"><b>B.Sc. Gesundheitsinformatik</b><small>HTWG Konstanz</small></div>
+        </div>
+    </div>
+</section>
+
+<div class="label">Vorschlag 3 · Data Universe</div>
+
+<script>
+(() => {
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mouse = { x: 0, y: 0 };
+    addEventListener('pointermove', e => { mouse.x = e.clientX / innerWidth - .5; mouse.y = e.clientY / innerHeight - .5; });
+
+    /* ---------- 3D-Partikel-Netzwerk ---------- */
+    const cv = document.getElementById('net'), ctx = cv.getContext('2d');
+    const COLORS = ['#ec5f78', '#b4dc32', '#c2306f'];
+    let W, H, dpr, pts = [];
+    function resize() {
+        dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
+        cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const n = W < 700 ? 70 : 140;
+        pts = Array.from({ length: n }, () => ({ x: (Math.random() - .5) * 1600, y: (Math.random() - .5) * 1000, z: (Math.random() - .5) * 1600, c: COLORS[Math.random() * 3 | 0] }));
+    }
+    resize(); addEventListener('resize', resize);
+    let rot = 0, scrollRot = 0;
+    addEventListener('scroll', () => { scrollRot = scrollY * .0008; }, { passive: true });
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        rot += reduce ? 0 : .0012;
+        const ay = rot + mouse.x * .6 + scrollRot, ax = mouse.y * .4;
+        const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax), f = 700;
+        const proj = pts.map(p => {
+            let x = p.x * cy - p.z * sy, z = p.x * sy + p.z * cy;
+            let y = p.y * cx - z * sx; z = p.y * sx + z * cx;
+            const s = f / (f + z + 900);
+            return { X: W / 2 + x * s, Y: H / 2 + y * s, s, c: p.c, x, y, z };
+        });
+        for (let i = 0; i < proj.length; i++) {
+            const a = proj[i];
+            for (let j = i + 1; j < proj.length; j++) {
+                const b = proj[j], d = Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+                if (d < 260) { ctx.strokeStyle = `rgba(236,95,120,${(1 - d / 260) * .35 * a.s})`; ctx.lineWidth = a.s; ctx.beginPath(); ctx.moveTo(a.X, a.Y); ctx.lineTo(b.X, b.Y); ctx.stroke(); }
+            }
+        }
+        proj.forEach(p => { ctx.fillStyle = p.c; ctx.globalAlpha = Math.min(1, p.s * 1.4); ctx.beginPath(); ctx.arc(p.X, p.Y, 2.4 * p.s + .5, 0, 7); ctx.fill(); });
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(draw);
+    }
+    draw();
+
+    /* ---------- Skill-Globus (Fibonacci-Kugel) ---------- */
+    const skills = [
+        ['Java',3],['C#',3],['Python',2],['VBA',3],['SQL',3],['HTML & CSS',2],['JavaScript',1],['PHP',1],
+        ['MS Access',3],['REST-APIs',3],['HL7 FHIR',3],['Postman',3],['HTTP',3],['pandas',2],['scikit-learn',2],
+        ['Regression',2],['Clustering',2],['PCA & t-SNE',2],['NLP',2],['Git',3],['GitHub',3],['Tests',3],
+        ['Dokumentation',3],['Figma',2],['Wireframes',2],['Personas',2],['Prototyping',2],['Usability',2],
+        ['Jira',2],['Trello',2],['Miro',2],['Scrum',1],['Requirements',3],['Prozessanalyse',3],['ChatGPT',3],
+        ['Claude',3],['Copilot',2],['LLMs',2],['Windows',3],['Remote-Support',3],['Tickets',3],['Linux',1],
+        ['Docker',1],['PowerShell',1],['Stakeholder',3],['Statistik',2]
+    ];
+    const globe = document.getElementById('globe');
+    const nodes = skills.map(([name, lvl], i) => {
+        const el = document.createElement('span'); el.textContent = name; el.className = 'l' + lvl; globe.appendChild(el);
+        const phi = Math.acos(1 - 2 * (i + .5) / skills.length), theta = Math.PI * (1 + Math.sqrt(5)) * i;
+        return { el, x: Math.sin(phi) * Math.cos(theta), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(theta) };
+    });
+    let gx = .3, gy = 0, vx = 0, vy = .004, drag = null;
+    globe.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; globe.setPointerCapture(e.pointerId); });
+    globe.addEventListener('pointermove', e => {
+        if (!drag) return;
+        vy = (e.clientX - drag.x) * .0008; vx = (e.clientY - drag.y) * -.0008; drag = { x: e.clientX, y: e.clientY };
+    });
+    globe.addEventListener('pointerup', () => drag = null);
+    function spin() {
+        if (!drag) { vy += (.003 - vy) * .02; vx *= .95; }
+        gy += reduce ? 0 : vy; gx += reduce ? 0 : vx;
+        const R = Math.min(globe.clientWidth, globe.clientHeight) * .42;
+        const cy = Math.cos(gy), sy = Math.sin(gy), cx = Math.cos(gx), sx = Math.sin(gx);
+        nodes.forEach(n => {
+            let x = n.x * cy - n.z * sy, z = n.x * sy + n.z * cy;
+            let y = n.y * cx - z * sx; z = n.y * sx + z * cx;
+            const s = (z + 2) / 3;
+            n.el.style.transform = `translate(-50%,-50%) translate(${x * R}px, ${y * R}px) scale(${.6 + s * .6})`;
+            n.el.style.opacity = .25 + s * .75; n.el.style.zIndex = Math.round(s * 100);
+        });
+        requestAnimationFrame(spin);
+    }
+    spin();
+
+    /* ---------- Text-Scramble ---------- */
+    const glyphs = '!<>-_\\/[]{}=+*^?#01';
+    const scramble = el => {
+        const target = el.textContent; let frame = 0;
+        const tick = () => {
+            el.textContent = [...target].map((ch, i) => i < frame / 2 || ch === ' ' ? ch : glyphs[Math.random() * glyphs.length | 0]).join('');
+            if (frame++ < target.length * 2) requestAnimationFrame(tick); else el.textContent = target;
+        };
+        if (!reduce) tick();
+    };
+    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { scramble(e.target); io.unobserve(e.target); } }), { threshold: .6 });
+    document.querySelectorAll('[data-scramble]').forEach(el => io.observe(el));
+
+    /* ---------- Flip per Tap ---------- */
+    document.querySelectorAll('.flip').forEach(f => f.addEventListener('click', () => f.classList.toggle('on')));
+
+    /* ---------- 3D-Timeline: Stationen fahren beim Scrollen heran ---------- */
+    const road = document.getElementById('road'), items = [...road.children], scene = road.parentElement;
+    function roadUpdate() {
+        const r = scene.getBoundingClientRect();
+        const p = 1 - Math.min(Math.max((r.top + r.height * .5) / innerHeight, 0), 1.2);
+        items.forEach(it => {
+            const base = +it.dataset.pos * 190;
+            it.style.bottom = (base - p * 500 + 80) + 'px';
+        });
+    }
+    addEventListener('scroll', roadUpdate, { passive: true }); roadUpdate();
+})();
+</script>
+</body>
+</html>
