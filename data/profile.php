@@ -17,7 +17,7 @@ return [
         'name'      => 'Julia Betz',
         'role'      => 'Informatikerin',
         // Pfad zum eigenen Foto, z. B. 'assets/img/profil.jpg'. Leer lassen = Platzhalter.
-        'photo'     => '',
+        'photo'     => 'assets\img\selfie.jpeg',
         'email'     => 'kontakt@example.de',
         'location'  => 'Region Konstanz',
         'linkedin'  => '',
@@ -36,7 +36,7 @@ return [
             'Healthcare-IT-Enthusiastin',
             'Problemlöserin mit Daten & KI',
         ],
-        'claim'    => 'Ich verbinde Technologie, Prozesse und Menschen – und nutze Software, '
+        'claim'    => 'Ich verbinde Technologie, Prozesse und Menschen und nutze Software, '
                     . 'Daten und KI, um Arbeitsabläufe zu verbessern und den Alltag von Menschen zu erleichtern.',
     ],
 
