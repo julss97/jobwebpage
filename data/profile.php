@@ -19,7 +19,7 @@ return [
         // Pfad zum eigenen Foto, z. B. 'assets/img/profil.jpg'. Leer lassen = Platzhalter.
         'photo'     => 'assets\img\selfie.jpeg',
         'email'     => 'julia.betz97@outlook.de',
-        'location'  => 'Region Konstanz',
+        'location'  => 'Region Berlin',
         'linkedin'  => 'www.linkedin.com/in/juliabetz1997',
         'github'    => 'www.github.com/julss97',
         'languages' => [
