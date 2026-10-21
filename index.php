@@ -3,10 +3,16 @@ declare(strict_types=1);
 
 require __DIR__ . '/includes/functions.php';
 $p = require __DIR__ . '/data/profile.php';
+$config = require __DIR__ . '/includes/config.php';
 
 $person = $p['person'];
-$flash  = $_SESSION['contact_flash'] ?? null;
+$static = defined('STATIC_BUILD');
+$flash  = $static ? null : ($_SESSION['contact_flash'] ?? null);
 unset($_SESSION['contact_flash']);
+
+// Kontaktformular: PHP-Server (contact.php), statisch über Web3Forms oder als E-Mail-Link
+$formMode   = !$static ? 'php' : ($config['web3forms_key'] !== '' ? 'web3forms' : 'mailto');
+$formAction = ['php' => 'contact.php', 'web3forms' => 'https://api.web3forms.com/submit', 'mailto' => 'mailto:' . $person['email']][$formMode];
 $old    = $flash['old'] ?? [];
 $errors = $flash['errors'] ?? [];
 
@@ -343,9 +349,17 @@ $ribbonB = array_column(array_merge($p['skills']['Data Science & ML'], $p['skill
                 <a class="magnet reveal" href="mailto:<?= e($person['email']) ?>"><span>Schreib mir <?= icon('mail') ?></span></a>
             </div>
 
-            <form class="contact-form reveal" action="contact.php" method="post" novalidate id="contact-form">
-                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
-                <div class="hp" aria-hidden="true"><label>Webseite <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+            <form class="contact-form reveal" action="<?= e($formAction) ?>" method="post" novalidate id="contact-form"
+                  data-mode="<?= e($formMode) ?>" data-email="<?= e($person['email']) ?>">
+                <?php if ($formMode === 'php'): ?>
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                    <div class="hp" aria-hidden="true"><label>Webseite <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+                <?php elseif ($formMode === 'web3forms'): ?>
+                    <input type="hidden" name="access_key" value="<?= e($config['web3forms_key']) ?>">
+                    <input type="hidden" name="subject" value="Neue Nachricht über die Webseite von <?= e($person['name']) ?>">
+                    <input type="hidden" name="from_name" value="Webseite <?= e($person['name']) ?>">
+                    <div class="hp" aria-hidden="true"><label>Bot-Schutz <input type="checkbox" name="botcheck" tabindex="-1"></label></div>
+                <?php endif; ?>
 
                 <div class="form-status <?= $flash ? ($flash['ok'] ? 'is-success' : 'is-error') : '' ?>" role="status" aria-live="polite" <?= $flash ? '' : 'hidden' ?>><?= e($flash['message'] ?? '') ?></div>
 

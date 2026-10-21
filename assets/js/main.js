@@ -352,6 +352,18 @@
             const valid = ['name', 'email', 'message'].map(validateField).every(Boolean);
             if (!valid) { $('[aria-invalid="true"]', form)?.focus(); return; }
 
+            const mode = form.dataset.mode || 'php';
+            const name = form.elements.name.value.trim();
+
+            // Statische Version ohne Formular-Dienst: E-Mail-Programm mit vorausgefüllter Nachricht öffnen
+            if (mode === 'mailto') {
+                const subject = `Nachricht über die Webseite von ${name}`;
+                const body = `${form.elements.message.value.trim()}\n\n${name}\n${form.elements.email.value.trim()}`;
+                window.location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                showStatus(true, 'Dein E-Mail-Programm wurde mit der Nachricht geöffnet – du musst sie dort nur noch absenden.');
+                return;
+            }
+
             submit.classList.add('is-loading');
             submit.disabled = true;
             try {
@@ -359,9 +371,17 @@
                     method: 'POST',
                     body: new FormData(form),
                     headers: { Accept: 'application/json' },
-                    credentials: 'same-origin',
+                    credentials: mode === 'php' ? 'same-origin' : 'omit',
                 });
                 const data = await res.json();
+                if (mode === 'web3forms') {
+                    const ok = !!data.success;
+                    showStatus(ok, ok
+                        ? `Vielen Dank, ${name}! Deine Nachricht ist angekommen – ich melde mich bald.`
+                        : 'Die Nachricht konnte leider nicht gesendet werden. Bitte versuche es später erneut.');
+                    if (ok) { form.reset(); updateCounter(); }
+                    return;
+                }
                 Object.entries(data.errors || {}).forEach(([k, v]) => setFieldError(k, v));
                 showStatus(data.ok, data.message);
                 if (data.ok) { form.reset(); updateCounter(); }

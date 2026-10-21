@@ -13,4 +13,9 @@ return [
     'messages_file'   => __DIR__ . '/../storage/messages.log',
     // Mindestabstand zwischen zwei Nachrichten pro Sitzung (Sekunden).
     'rate_limit_secs' => 60,
+
+    // Nur für die statische Version (Firebase Hosting, siehe build.php):
+    // Access Key von https://web3forms.com – kostenlos, wird per E-Mail zugeschickt.
+    // Leer lassen = das Formular öffnet stattdessen das E-Mail-Programm der Besucher.
+    'web3forms_key'   => '',
 ];

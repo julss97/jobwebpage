@@ -5,7 +5,8 @@
 
 declare(strict_types=1);
 
-if (session_status() === PHP_SESSION_NONE) {
+// Beim statischen Build (build.php) gibt es keine Sitzung.
+if (!defined('STATIC_BUILD') && session_status() === PHP_SESSION_NONE) {
     session_start([
         'cookie_httponly' => true,
         'cookie_samesite' => 'Lax',

@@ -1,3 +1,6 @@
 storage/
 .DS_Store
 *.zip
+public/
+.firebase/
+firebase-debug.log
