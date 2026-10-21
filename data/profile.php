@@ -18,10 +18,10 @@ return [
         'role'      => 'Informatikerin',
         // Pfad zum eigenen Foto, z. B. 'assets/img/profil.jpg'. Leer lassen = Platzhalter.
         'photo'     => 'assets\img\selfie.jpeg',
-        'email'     => 'kontakt@example.de',
+        'email'     => 'julia.betz97@outlook.de',
         'location'  => 'Region Konstanz',
-        'linkedin'  => '',
-        'github'    => '',
+        'linkedin'  => 'www.linkedin.com/in/juliabetz1997',
+        'github'    => 'www.github.com/julss97',
         'languages' => [
             ['name' => 'Deutsch',  'level' => 'Muttersprache'],
             ['name' => 'Englisch', 'level' => 'B2'],
@@ -64,7 +64,7 @@ return [
             'focus'   => 'Schwerpunkt IT-Management',
             'school'  => 'Hochschule Konstanz (HTWG)',
             'text'    => 'Vertiefung technischer Kenntnisse, erweitert um betriebswirtschaftliche, analytische und organisatorische '
-                       . 'Perspektiven – mit Fokus auf Datenanalyse, KI, Produktentwicklung und IT-Management.',
+                       . 'Perspektiven mit Fokus auf Datenanalyse, KI, Produktentwicklung und IT-Management.',
             'tags'    => ['Data Science', 'Machine Learning', 'NLP', 'IT-Management', 'Produktentwicklung'],
         ],
         [
