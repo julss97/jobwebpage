@@ -17,11 +17,11 @@ return [
         'name'      => 'Julia Betz',
         'role'      => 'Informatikerin',
         // Pfad zum eigenen Foto, z. B. 'assets/img/profil.jpg'. Leer lassen = Platzhalter.
-        'photo'     => '',
-        'email'     => 'kontakt@example.de',
-        'location'  => 'Region Konstanz',
-        'linkedin'  => '',
-        'github'    => '',
+        'photo'     => 'assets\img\selfie.jpeg',
+        'email'     => 'julia.betz97@outlook.de',
+        'location'  => 'Region Berlin',
+        'linkedin'  => 'www.linkedin.com/in/juliabetz1997',
+        'github'    => 'www.github.com/julss97',
         'languages' => [
             ['name' => 'Deutsch',  'level' => 'Muttersprache'],
             ['name' => 'Englisch', 'level' => 'B2'],
@@ -36,7 +36,7 @@ return [
             'Healthcare-IT-Enthusiastin',
             'Problemlöserin mit Daten & KI',
         ],
-        'claim'    => 'Ich verbinde Technologie, Prozesse und Menschen – und nutze Software, '
+        'claim'    => 'Ich verbinde Technologie, Prozesse und Menschen und nutze Software, '
                     . 'Daten und KI, um Arbeitsabläufe zu verbessern und den Alltag von Menschen zu erleichtern.',
     ],
 
@@ -64,7 +64,7 @@ return [
             'focus'   => 'Schwerpunkt IT-Management',
             'school'  => 'Hochschule Konstanz (HTWG)',
             'text'    => 'Vertiefung technischer Kenntnisse, erweitert um betriebswirtschaftliche, analytische und organisatorische '
-                       . 'Perspektiven – mit Fokus auf Datenanalyse, KI, Produktentwicklung und IT-Management.',
+                       . 'Perspektiven mit Fokus auf Datenanalyse, KI, Produktentwicklung und IT-Management.',
             'tags'    => ['Data Science', 'Machine Learning', 'NLP', 'IT-Management', 'Produktentwicklung'],
         ],
         [
